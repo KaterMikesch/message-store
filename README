@@ -1,17 +1,17 @@
 # message-store
 
-FIXME: write description
+Maybe at some later time a store for internet messages like emails and news. Highly experimental project for learning Clojure and GitHub.
 
 ## Usage
 
-FIXME: write
+Not of much use right now. Just for playing around with a conversation based message store.
 
 ## Installation
 
-FIXME: write
+Not installable
 
 ## License
 
-Copyright (C) 2010 FIXME
+Copyright (C) 2010 Axel Katerbau
 
 Distributed under the Eclipse Public License, the same as Clojure.
