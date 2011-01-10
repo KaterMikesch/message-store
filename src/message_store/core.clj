@@ -74,9 +74,9 @@
   [c mid]
   (cond
    (contains? (set (c :messages)) mid) c
-   :else (do
-	   (update! :conversations {:_id (c :_id)} (merge c {:messages (conj (c :messages) mid) :mod-date (Date.)}))
-	   (fetch-by-id :conversations (c :_id)))))
+   :else (let [new-c (merge c {:messages (conj (c :messages) mid) :mod-date (Date.)})]
+	   (update! :conversations {:_id (c :_id)} new-c)
+	   new-c)))
 
 (defn merge-conversations
   [destination source]
@@ -90,7 +90,9 @@
       ;;(let [fetched-c (fetch-by-id :conversations (destination :_id))
       ;;saved-msgs (fetched-c :messages)]
       ;;(println "fetched-c" fetched-c "saved-msgs" saved-msgs "expected-msgs" all-messages)
-      (println "merged into:" (fetch-by-id :conversations (destination :_id)))
+
+
+      ;;(println "merged into:" (fetch-by-id :conversations (destination :_id)))
       ;;(assert (= saved-msgs all-messages))))
       )
     ;; change conversation of all messages from source to destination
@@ -125,7 +127,11 @@
 
 (defn reference-from-mimemessage
   [mm]
-  (first (reduce conj (seq (.getHeader mm "In-Reply-To")) (seq (.getHeader mm "References")))))
+  (let [in-reply-to (last (.getHeader mm "In-Reply-To"))]
+    (cond
+     (not (nil? in-reply-to)) in-reply-to
+     :else (let [references (last (.getHeader mm "References"))]
+	     (if (not (nil? references)) (last (.split references "\\s+")))))))
 
 (defn recipients-from-mimemessage
   [mm]
@@ -143,11 +149,11 @@
   [mm]
   (let [mid (.getMessageID mm)
 	r (reference-from-mimemessage mm)]
-;    (println "create-message with: " mid r)
+    ;;(println "create-message with message-id: " mid " and reference: " r)
     (insert! :messages
 	     (struct-map message
 	       :mid (cond
-		     (nil? mid) (str "fakedMsgId " (System/currentTimeMillis))
+		     (nil? mid) (str "<fakedMsgId" (System/currentTimeMillis) ">")
 		     :else mid)
 	       :subject (.getSubject mm)
 	       :recipients (recipients-from-mimemessage mm)
