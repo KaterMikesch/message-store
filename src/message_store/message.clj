@@ -3,7 +3,10 @@
             [datomic-schema.schema :as s]
             [clojure.spec :as spec]
             [clojure.java.io :as io]
-            [digest.core :as digest])
+            [digest.core :as digest]
+            [gloss.core :as glc]
+            [gloss.io :as gio]
+            [clojure.pprint :as pp])
   (:import (javax.mail Session Folder Flags)
            (javax.mail.internet MimeMessage InternetAddress)
            (org.apache.commons.io IOUtils)))
@@ -41,14 +44,14 @@
 
 (System/setProperty "mail.mime.address.strict" "false")
 
-(defn raw-data->MimeMessage [d]
+(defn raw-data->mimemessage [d]
   (try
     (let [is (io/input-stream d)]
       (MimeMessage.
        (Session/getDefaultInstance (System/getProperties)) is))
     (catch Exception _)))
 
-(spec/fdef raw-data->MimeMessage
+(spec/fdef raw-data->mimemessage
            :args (spec/cat :d (spec/alt :file-path string?
                                         :byte-array byte-array?))
            :ret (spec/nilable #(instance? MimeMessage %)))
@@ -86,6 +89,26 @@
                 ::reference (if-not (= mid r) r)
                 ::flags []
                 ::mod-date (java.util.Date.))))
+
+(glc/defcodec elmx->raw-data-codec
+  (glc/repeated :byte
+                :prefix (glc/prefix (glc/string :ascii :delimiters ["\n" "\r\n"])
+                                    #(Long/parseLong (re-find  #"\d+" %))
+                                    str)))
+
+(defn elmx->raw-data [e]
+  (try
+    (byte-array (gio/decode elmx->raw-data-codec (gio/to-byte-buffer (io/input-stream e)) false))
+    (catch Exception _)))
+
+(glc/defcodec elmx->raw-header-data-codec
+  (glc/repeated :byte
+                :delimiters ["\n\n" "\r\n\r\n"]))
+
+(defn elmx->raw-header-data [e]
+  (try
+    (byte-array (gio/decode elmx->raw-header-data-codec (gio/to-byte-buffer (io/input-stream e)) false))
+    (catch Exception _)))
 
 (defn filename [m]
   (digest/md5 (::mid m)))

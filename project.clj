@@ -8,4 +8,5 @@
                  [com.datomic/datomic-free "0.9.5359"]
                  [datomic-schema "1.3.0"]
                  [commons-io "2.5"]
-                 [org.clojars.akiel/digest "0.1"]])
+                 [org.clojars.akiel/digest "0.1"]
+                 [gloss "0.2.6"]])
