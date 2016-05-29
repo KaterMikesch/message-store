@@ -72,7 +72,7 @@
       (str personal " <" (.getAddress f) ">")
       (.getAddress f))))
 
-(defn MimeMessage->message [mm]
+(defn mimemessage->message [mm]
   (let [mid (.getMessageID mm)
 	r (reference-from-mimemessage mm)]
     (struct-map message
