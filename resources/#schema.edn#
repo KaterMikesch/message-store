@@ -1,0 +1,6 @@
+[
+ ;; conversation
+ {:db/id #db/id[:db.part/db]
+  :db/ident :conversation/
+  }
+ ]
