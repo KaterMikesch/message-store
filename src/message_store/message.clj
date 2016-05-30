@@ -102,12 +102,13 @@
     (catch Exception _)))
 
 (glc/defcodec elmx->raw-header-data-codec
-  (glc/repeated :byte
-                :delimiters ["\n\n" "\r\n\r\n"]))
+  [:length (glc/string :ascii :delimiters ["\n" "\r\n"])
+   :header (glc/repeated :byte
+                 :delimiters ["\n\n" "\r\n\r\n"])])
 
 (defn elmx->raw-header-data [e]
   (try
-    (byte-array (gio/decode elmx->raw-header-data-codec (gio/to-byte-buffer (io/input-stream e)) false))
+    (byte-array (nth (gio/decode elmx->raw-header-data-codec (gio/to-byte-buffer (io/input-stream e)) false) 3))
     (catch Exception _)))
 
 (defn filename [m]
