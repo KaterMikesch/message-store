@@ -1,27 +1,54 @@
 (ns message-store.message
-  (:require [datomic.api :as d]
-            [datomic-schema.schema :as s]
-            [clojure.spec :as spec]
+  (:require [clojure.spec :as spec]
             [clojure.java.io :as io]
             [digest.core :as digest]
             [gloss.core :as glc]
-            [gloss.io :as gio]
-            [clojure.pprint :as pp])
+            [gloss.io :as gio])
   (:import (javax.mail Session Folder Flags)
            (javax.mail.internet MimeMessage InternetAddress)
            (org.apache.commons.io IOUtils)))
 
 (def schema
-  [(s/schema message
-             (s/fields
-              [mid :string :indexed]
-              [subject :string :indexed]
-              [recipients :string :many :indexed]
-              [date :instant :indexed]
-              [from :string :indexed]
-              [reference :string :indexed]
-              [flags :string :many :indexed]
-              [mod-date :instant :indexed]))])
+  [{:db/ident ::mid
+    :db/valueType :db.type/string
+    :db/id #db/id[:db.part/db -100021]
+    :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+   {:db/ident ::subject
+    :db/valueType :db.type/string
+    :db/id #db/id[:db.part/db -100022]
+    :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+   {:db/ident ::recipients
+    :db/valueType :db.type/string
+    :db/id #db/id[:db.part/db -100023]
+    :db/cardinality :db.cardinality/many
+    :db.install/_attribute :db.part/db}
+   {:db/ident ::date
+    :db/valueType :db.type/instant
+    :db/id #db/id[:db.part/db -100024]
+    :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+   {:db/ident ::from
+    :db/valueType :db.type/string
+    :db/id #db/id[:db.part/db -100025]
+    :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+   {:db/ident ::reference
+    :db/valueType :db.type/string
+    :db/id #db/id[:db.part/db -100026]
+    :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}
+   {:db/ident ::flags
+    :db/valueType :db.type/string
+    :db/id #db/id[:db.part/db -100027]
+    :db/cardinality :db.cardinality/many
+    :db.install/_attribute :db.part/db}
+   {:db/ident ::mod-date
+    :db/valueType :db.type/instant
+    :db/id #db/id[:db.part/db -100028]
+    :db/cardinality :db.cardinality/one
+    :db.install/_attribute :db.part/db}])
 
 (defn valid-email-address? [s]
   (try
@@ -31,7 +58,7 @@
 (defn byte-array? [x]
   (= (type x) (Class/forName "[B")))
 
-(defstruct message [::mid ::subject ::recipients ::date ::from ::reference ::flags ::mod-date])
+(defstruct message ::mid ::subject ::recipients ::date ::from ::reference ::flags ::mod-date)
 (spec/def ::mid string?)
 (spec/def ::subject string?)
 (spec/def ::recipients (spec/cat :address (spec/+ valid-email-address?)))
@@ -62,7 +89,7 @@
     (cond
      (not (nil? in-reply-to)) in-reply-to
      :else (let [references (last (.getHeader mm "References"))]
-	     (if (not (nil? references)) (last (.split references "\\s+")))))))
+            (if (not (nil? references)) (last (.split references "\\s+")))))))
 
 (defn recipients-from-mimemessage
   [mm]
@@ -77,7 +104,7 @@
 
 (defn mimemessage->message [mm]
   (let [mid (.getMessageID mm)
-	r (reference-from-mimemessage mm)]
+        r (reference-from-mimemessage mm)]
     (struct-map message
                 ::mid (if (nil? mid)
                        (str "<fakedMsgId" (str (java.util.UUID/randomUUID)) ">")
@@ -90,25 +117,25 @@
                 ::flags []
                 ::mod-date (java.util.Date.))))
 
-(glc/defcodec elmx->raw-data-codec
+(glc/defcodec emlx->raw-data-codec
   (glc/repeated :byte
                 :prefix (glc/prefix (glc/string :ascii :delimiters ["\n" "\r\n"])
                                     #(Long/parseLong (re-find  #"\d+" %))
                                     str)))
 
-(defn elmx->raw-data [e]
+(defn emlx->raw-data [e]
   (try
-    (byte-array (gio/decode elmx->raw-data-codec (gio/to-byte-buffer (io/input-stream e)) false))
+    (byte-array (gio/decode emlx->raw-data-codec (gio/to-byte-buffer (io/input-stream e)) false))
     (catch Exception _)))
 
-(glc/defcodec elmx->raw-header-data-codec
+(glc/defcodec emlx->raw-header-data-codec
   [:length (glc/string :ascii :delimiters ["\n" "\r\n"])
    :header (glc/repeated :byte
                  :delimiters ["\n\n" "\r\n\r\n"])])
 
-(defn elmx->raw-header-data [e]
+(defn emlx->raw-header-data [e]
   (try
-    (byte-array (nth (gio/decode elmx->raw-header-data-codec (gio/to-byte-buffer (io/input-stream e)) false) 3))
+    (byte-array (nth (gio/decode emlx->raw-header-data-codec (gio/to-byte-buffer (io/input-stream e)) false) 3))
     (catch Exception _)))
 
 (defn filename [m]
