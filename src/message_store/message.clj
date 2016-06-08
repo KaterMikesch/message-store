@@ -3,7 +3,8 @@
             [clojure.java.io :as io]
             [digest.core :as digest]
             [gloss.core :as glc]
-            [gloss.io :as gio])
+            [gloss.io :as gio]
+            [datomic.api :as db])
   (:import (javax.mail Session Folder Flags)
            (javax.mail.internet MimeMessage InternetAddress)
            (org.apache.commons.io IOUtils)))
@@ -11,6 +12,7 @@
 (def schema
   [{:db/ident ::mid
     :db/valueType :db.type/string
+    :db/unique :db.unique/identity
     :db/id #db/id[:db.part/db -100021]
     :db/cardinality :db.cardinality/one
     :db.install/_attribute :db.part/db}
